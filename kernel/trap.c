@@ -29,6 +29,8 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -49,7 +51,7 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
+
   if(r_scause() == 8){
     // system call
 
@@ -63,6 +65,7 @@ usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
+   // printf("1\n");
 
     syscall();
   } else if((which_dev = devintr()) != 0){
@@ -77,8 +80,34 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
+  if(which_dev == 2){
+    //printf("timer\n");
+    if(p->alarm_interval==0  && p->handler==0){
+      yield();
+    }
+    if(p->tick_count==p->alarm_interval){
+      if(p->flag==0){
+        p->temp_epc=p->trapframe->epc;
+        char *ptr_src = (char *)(p->trapframe);
+        char *ptr_dst =(char *)(p->arr);
+
+        
+        int count=0;
+        while(count < sizeof(p->arr)){
+          *ptr_dst++ = *ptr_src++;
+        }
+        //memmove(p->arr, p->trapframe, sizeof(p->arr));
+        p->trapframe->epc = p->handler;
+        p->tick_count = 0;
+        p->flag=1;
+      }
+       
+    }else{
+      p->tick_count+=1;
+    }
+    
+  }
+ 
 
   usertrapret();
 }

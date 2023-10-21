@@ -89,6 +89,11 @@ test1()
     if(count >= 10)
       break;
     foo(i, &j);
+    //printf("count=%d\n",count);
+
+    //printf("i=%d j=%d\n",i,j);
+    
+    //
   }
   if(count < 10){
     printf("\ntest1 failed: too few calls to the handler\n");
