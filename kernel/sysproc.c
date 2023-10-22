@@ -123,23 +123,28 @@ uint64
 sys_sigreturn(void)
 {
   struct proc *p = myproc();
-  p->trapframe->epc = p->temp_epc;
+  //p->trapframe->epc = p->temp_epc;
 
 
   char *ptr_dst = (char *)(p->trapframe);
   char *ptr_src =(char *)(p->arr);
-
   int count=sizeof(p->arr);
-  ptr_dst+=count;
-  ptr_src+=count;
-  while(count--){
-    *--ptr_dst = *--ptr_src;
+  if (ptr_src > ptr_dst) {
+    while(count-- > 0)
+      *ptr_dst++ = *ptr_src++;
+  } else {
+    ptr_dst += count;
+    ptr_src += count;
+    while(count-- > 0)
+      *--ptr_dst = *--ptr_src;
   }
-
+  // while(count--){
+  //   *ptr_dst++ = *ptr_src++;
+  // }
 
 
   //memmove(p->trapframe, p->arr, sizeof(p->arr));
-
+  //*p->trapframe = *p->trapframe_saved;
   p->flag=0;
   return 0;
 }

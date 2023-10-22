@@ -79,38 +79,36 @@ usertrap(void)
   if(p->killed)
     exit(-1);
 
-  // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2){
-    //printf("timer\n");
-    if(p->alarm_interval==0  && p->handler==0){
-      yield();
-    }
-    if(p->tick_count==p->alarm_interval){
-      if(p->flag==0){
-        p->temp_epc=p->trapframe->epc;
+//   // give up the CPU if this is a timer interrupt.
+  if(which_dev==2){
+    if(p->alarm_interval>0){
+        p->tick_count++;
+        if(p->flag==0 && p->tick_count > p->alarm_interval){
+          p->tick_count=0;
+          p->temp_epc=p->trapframe->epc;
+          //*p->trapframe_saved = *p->trapframe;
+          char *ptr_src = (char *)(p->trapframe); //0x0000000087f49000
+          char *ptr_dst =(char *)(p->arr);        //0x0000000080012700
+          int count=sizeof(p->arr);
+          if (ptr_src > ptr_dst) {
+            while(count-- > 0)
+              *ptr_dst++ = *ptr_src++;
+          } else {
+            ptr_dst += count;
+            ptr_src += count;
+            while(count-- > 0)
+              *--ptr_dst = *--ptr_src;
+          }
+          // while(count-- > 0)
+          //   *ptr_dst++ = *ptr_src++;
 
-        char *ptr_src = (char *)(p->trapframe);
-        char *ptr_dst =(char *)(p->arr);
-
-        
-        int count=sizeof(p->arr);
-        while(count--){
-          *ptr_dst++ = *ptr_src++;
+          p->trapframe->epc = p->handler;
+          p->flag=1;
         }
-
-        
-        //memmove(p->arr, p->trapframe, sizeof(p->arr));
-        p->trapframe->epc = p->handler;
-        p->tick_count = 0;
-        p->flag=1;
-      }
-       
-    }else{
-      p->tick_count+=1;
     }
-    
+    yield();
   }
- 
+
 
   usertrapret();
 }

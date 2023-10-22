@@ -3,6 +3,8 @@
 #include "kernel/fcntl.h"
 #include "user/user.h"
 
+
+
 char*
 strcpy(char *s, const char *t)
 {
@@ -103,6 +105,9 @@ memmove(void *vdst, const void *vsrc, int n)
 
   dst = vdst;
   src = vsrc;
+
+  // printf("\ndst=%p\n",dst);
+  // printf("src=%p\n",src);
   if (src > dst) {
     while(n-- > 0)
       *dst++ = *src++;

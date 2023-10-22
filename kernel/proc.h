@@ -109,4 +109,5 @@ struct proc {
   int tick_count;
   uint64 arr[36];
   int flag;
+  struct trapframe *trapframe_saved;
 };
