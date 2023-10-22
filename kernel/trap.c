@@ -88,14 +88,17 @@ usertrap(void)
     if(p->tick_count==p->alarm_interval){
       if(p->flag==0){
         p->temp_epc=p->trapframe->epc;
+
         char *ptr_src = (char *)(p->trapframe);
         char *ptr_dst =(char *)(p->arr);
 
         
-        int count=0;
-        while(count < sizeof(p->arr)){
+        int count=sizeof(p->arr);
+        while(count--){
           *ptr_dst++ = *ptr_src++;
         }
+
+        
         //memmove(p->arr, p->trapframe, sizeof(p->arr));
         p->trapframe->epc = p->handler;
         p->tick_count = 0;

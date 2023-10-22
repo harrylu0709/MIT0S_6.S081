@@ -129,11 +129,15 @@ sys_sigreturn(void)
   char *ptr_dst = (char *)(p->trapframe);
   char *ptr_src =(char *)(p->arr);
 
-  int count=0;
-  while(count < sizeof(p->arr)){
-    *ptr_dst++ = *ptr_src++;
-    count++;
+  int count=sizeof(p->arr);
+  ptr_dst+=count;
+  ptr_src+=count;
+  while(count--){
+    *--ptr_dst = *--ptr_src;
   }
+
+
+
   //memmove(p->trapframe, p->arr, sizeof(p->arr));
 
   p->flag=0;
