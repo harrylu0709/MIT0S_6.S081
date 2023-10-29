@@ -43,12 +43,33 @@ sys_sbrk(void)
 {
   int addr;
   int n;
-
+  
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
+
+  struct proc *p = myproc();
+
+  addr = p->sz;
+  
+
+  if(p->sz + n < PGROUNDUP(p->trapframe->sp)){
     return -1;
+  }
+
+  if (n < 0){
+    uint64 newsz = p->sz + n;
+    uint64 oldsz = p->sz;
+    if(PGROUNDUP(newsz) < PGROUNDUP(oldsz)){
+      int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
+      uvmunmap(p->pagetable, PGROUNDUP(newsz), npages, 1);
+    }
+    //uvmdealloc(p->pagetable, p->sz, addr + n);
+  }
+  
+  p->sz += n;
+  // if(growproc(n) < 0)
+  //   return -1;
+
   return addr;
 }
 
