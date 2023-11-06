@@ -364,6 +364,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
   uint64 n, va0, pa0;
 
+  
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
 
@@ -373,23 +374,6 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
           return -1;
       }
     }
-
-    // if(va0 >= MAXVA){
-    //   return -1;
-    // }
-
-    //pte_t *pte = walk(pagetable, va0, 0);
-    // if (pte == 0 || (*pte & PTE_U) == 0 || (*pte & PTE_V) == 0) {
-    //   printf("copyout: invalid pte\n");
-    //   return -1;
-    // }
-
-    //if ((*pte & PTE_W) == 0) {
-      // if (cowalloc(pagetable, va0) < 0) {
-      //   return -1;
-      // }
-    //}
-    
     pa0 = walkaddr(pagetable, va0);
     if(pa0 == 0)
       return -1;
@@ -498,47 +482,38 @@ int is_cow_fault(pagetable_t pagetable, uint64 va){
   return 0;
 }
 
+
 int 
 cowalloc(pagetable_t pagetable, uint64 va){
+
+
+  pte_t *pte;
+  uint64 pa;
+  uint flags;
   va = PGROUNDDOWN(va);
 
-  pte_t *pte = walk(pagetable, va, 0);
+  
 
-  uint64 pa = PTE2PA(*pte);
-  int flags = PTE_FLAGS(*pte);
+  pte = walk(pagetable, va, 0);
+  
+  pa = PTE2PA(*pte);
 
-  // if(va >= MAXVA || ((va % PGSIZE) != 0))
-  //   return -1;
-
-
-  if(pte == 0)
-    return -1;
   if(pa==0) return -1;
-  // if((*pte & PTE_V) == 0)
-  //   return -1;
-  // if((*pte & PTE_U) == 0)
-  //   return -1;
 
+  flags = PTE_FLAGS(*pte);
+  flags = (flags & ~PTE_C) | PTE_W;
   char *mem = kalloc();
   if(mem == 0){
-    printf("va=%p\n",va);
-    panic("kalloc");
-    
     return -1;
   } 
   
   memmove(mem, (char *)pa, PGSIZE);
   uvmunmap(pagetable, va, 1, 1);
-
-  flags &= ~(PTE_C);
-  flags |= PTE_W;
   
   if(mappages(pagetable, va, PGSIZE, (uint64)mem, flags) < 0){
     kfree(mem);
     return -1;
   }
-  
+
   return 0;
 }
-
-
