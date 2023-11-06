@@ -67,6 +67,28 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if (r_scause() == 15){
+
+    uint64 va = r_stval();
+
+    if (va >= MAXVA || (va < p->trapframe->sp && va >= (p->trapframe->sp - PGSIZE)))
+      p->killed = 1;
+    // if(cowalloc(p->pagetable, va) < 0){
+    //   p->killed = 1;
+    // }
+    
+    if(is_cow_fault(p->pagetable, va)){
+        if(cowalloc(p->pagetable, va) < 0){
+            printf("usertrap: cowalloc failed!\n");
+            p->killed = 1;
+        }
+    }
+    else{
+        printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+        printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+        p->killed = 1;
+    }
+
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
