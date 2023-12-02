@@ -59,6 +59,28 @@ printptr(uint64 x)
     consputc(digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
+void info(char *fnt,...){
+  if(myproc()->pid % 2 == 0){
+    printf("\x1B[0;34m");//blue
+  }else{
+    printf("\x1B[0;32m");//green
+  }
+  printf(fnt);
+  printf("\x1B[0m");
+  printf("\n");
+}
+
+void scheduler_info(char *fnt,...){
+
+  printf("\x1B[0;31m");//red
+
+  printf(fnt);
+  printf("\x1B[0m");
+  printf("\n");
+}
+
+
+
 // Print to the console. only understands %d, %x, %p, %s.
 void
 printf(char *fmt, ...)
@@ -131,4 +153,21 @@ printfinit(void)
 {
   initlock(&pr.lock, "pr");
   pr.locking = 1;
+}
+void
+backtrace(void)
+{
+  uint64 fp, ra;
+  fp=r_fp();
+  printf("backtrace\n");
+
+
+  uint64 up=PGROUNDUP(fp);
+  uint64 down=PGROUNDDOWN(fp);
+
+  while( fp > down  &&  fp  < up){
+    ra = *(uint64 *)(fp - 8);
+    printf("%p\n",ra);
+    fp = *(uint64 *)(fp - 16);
+  }
 }

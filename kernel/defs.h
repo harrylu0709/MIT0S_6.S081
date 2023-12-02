@@ -80,7 +80,9 @@ int             pipewrite(struct pipe*, uint64, int);
 void            printf(char*, ...);
 void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
-
+void            info(char *, ...);
+void            scheduler_info(char *, ...);
+void            backtrace(void);
 // proc.c
 int             cpuid(void);
 void            exit(int);
