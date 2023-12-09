@@ -613,7 +613,7 @@ wakeup1(struct proc *p)
 }
 
 // Kill the process with the given pid.
-// The victim won't exit until it tries to return
+// The victm won't exit until it tries to return
 // to user space (see usertrap() in trap.c).
 int
 kill(int pid)
