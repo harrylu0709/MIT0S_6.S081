@@ -9,6 +9,7 @@
 #include "kernel/file.h"
 #include "user/user.h"
 
+
 #define fail(msg) do {printf("FAILURE: " msg "\n"); failed = 1; goto done;} while (0);
 static int failed = 0;
 
@@ -45,6 +46,7 @@ static int
 stat_slink(char *pn, struct stat *st)
 {
   int fd = open(pn, O_RDONLY | O_NOFOLLOW);
+  // printf("%x\n",O_NOFOLLOW);
   if(fd < 0)
     return -1;
   if(fstat(fd, st) != 0)
@@ -76,8 +78,12 @@ testsymlink(void)
 
   if (stat_slink("/testsymlink/b", &st) != 0)
     fail("failed to stat b");
-  if(st.type != T_SYMLINK)
+  if(st.type != T_SYMLINK){
+    printf("%d\n",T_SYMLINK);
+    printf("type=%d\n",st.type);
     fail("b isn't a symlink");
+  }
+    
 
   fd2 = open("/testsymlink/b", O_RDWR);
   if(fd2 < 0)
