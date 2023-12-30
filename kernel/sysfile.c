@@ -484,3 +484,125 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_mmap(void)
+{
+  uint64 addr;
+  int len, prot, flags, fd, offset;
+  struct proc *p = myproc();
+  struct file *file;
+  if(argaddr(0, &addr) < 0 || argint(1, &len) < 0 || argint(2, &prot) < 0 || argint(3, &flags) < 0 || argfd(4, &fd, &file) < 0 || argint(5, &offset) < 0){
+    return -1;
+  }
+
+  if(!file->writable && (prot & PROT_WRITE) && flags==MAP_SHARED)
+    return -1; 
+  
+  len = PGROUNDUP(len);
+
+  if(p->sz+len > MAXVA)
+  {
+    return -1;
+  }
+
+  if (offset < 0 || offset % PGSIZE != 0){
+    return -1;
+  }
+
+
+  
+  for(int i = 0; i < VMASIZE; i++){
+    if(p->vma[i].used == 0){
+      p->vma[i].used = 1;
+      p->vma[i].addr = p->sz;
+      p->vma[i].len = len;
+      p->vma[i].prot = prot;
+      p->vma[i].flags = flags;
+      p->vma[i].fd = fd;
+      p->vma[i].file = file;//
+      p->vma[i].offset =offset;
+      filedup(file);
+      p->sz += len;
+      return p->vma[i].addr;
+    }
+  }
+  return -1;
+}
+
+uint64
+sys_munmap(void)
+{
+  uint64 addr;
+  int len;
+  struct proc *p = myproc();
+  if(argaddr(0, &addr) < 0 || argint(1, &len) < 0){
+    return -1;
+  }
+
+  struct vma *vma = 0;
+  for(int i= 0; i < VMASIZE; i++){
+    if (p->vma[i].used == 1 && addr >= p->vma[i].addr && addr < (p->vma[i].addr + p->vma[i].len)){
+        vma = &p->vma[i];
+        break;
+    } 
+  }
+
+  if(vma->addr == addr){
+    vma->len -= len;
+    vma->addr += len;
+    if(vma->flags && MAP_SHARED){
+      filewrite(vma->file, addr, len);
+    }
+
+    uvmunmap(p->pagetable, PGROUNDUP(vma->addr), len/PGSIZE ,0);
+    
+    if(vma->len == 0){
+      fileclose(vma->file);
+      vma->used = 0;
+    }
+  }
+  return 0;
+}
+// Write to file f.
+// addr is a user virtual address.
+// int
+// filewrite(struct file *f, uint64 addr, int n)
+
+// // void* mmap(void *addr, int length, int prot, int flags, int fd, int offset);
+
+// uint64
+// sys_mmap(void)
+// {
+//   uint64 addr;
+//   int length, prot, flags, fd, offset;
+//   struct file *file;
+//   struct proc *p = myproc();
+//   if(argaddr(0, &addr) || argint(1, &length) || argint(2, &prot) ||
+//     argint(3, &flags) || argfd(4, &fd, &file) || argint(5, &offset)) {
+//     return -1;
+//   }
+//   if(!file->writable && (prot & PROT_WRITE) && flags == MAP_SHARED)
+//     return -1;
+//   length = PGROUNDUP(length);
+//   if(p->sz > MAXVA - length)
+//     return -1;
+//   for(int i = 0; i < 16; i++) {
+//     if(p->vma[i].used == 0) {
+//       p->vma[i].used = 1;
+//       p->vma[i].addr = p->sz;
+//       p->vma[i].len = length;
+//       p->vma[i].prot = prot;
+//       p->vma[i].flags = flags;
+//       p->vma[i].fd = fd;
+//       p->vma[i].file = file;
+//       p->vma[i].offset = offset;
+//       filedup(file);
+//       p->sz += length;
+//       return p->vma[i].addr;
+//     }
+//   }
+//   return -1;
+// }
+
+

@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "fcntl.h"
 
 struct cpu cpus[NCPU];
 
@@ -302,6 +303,21 @@ fork(void)
 
   np->state = RUNNABLE;
 
+  for(int i = 0; i < VMASIZE; i++){
+    if(p->vma[i].used == 1){
+      np->vma[i].used = p->vma[i].used;
+      np->vma[i].addr = p->vma[i].addr;
+      np->vma[i].len =  p->vma[i].len;
+      np->vma[i].prot = p->vma[i].prot;
+      np->vma[i].flags = p->vma[i].flags;
+      np->vma[i].fd = p->vma[i].fd;
+      np->vma[i].file = p->vma[i].file;
+      np->vma[i].offset = p->vma[i].offset;
+      np->sz = p->sz;
+      filedup(p->vma[i].file);
+    }
+  }
+
   release(&np->lock);
 
   return pid;
@@ -351,6 +367,19 @@ exit(int status)
       fileclose(f);
       p->ofile[fd] = 0;
     }
+  }
+
+  struct vma *vma = 0;
+  for(int i= 0; i < VMASIZE; i++){
+    if(p->vma[i].used == 1){
+        vma = &p->vma[i];
+        if(vma->flags && MAP_SHARED){
+          filewrite(vma->file, vma->addr, vma->len);
+        }
+        fileclose(vma->file);
+        uvmunmap(p->pagetable, PGROUNDUP(vma->addr), vma->len/PGSIZE ,0);
+        vma->used = 0;
+    } 
   }
 
   begin_op();
